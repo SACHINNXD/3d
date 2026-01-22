@@ -1,1 +1,114 @@
 
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<title>High-End 3D Background</title>
+<style>
+  html, body {
+    margin: 0;
+    padding: 0;
+    overflow: hidden;
+    background: #050505;
+  }
+  canvas {
+    position: fixed;
+    inset: 0;
+    z-index: -1;
+  }
+</style>
+</head>
+<body>
+
+<script type="module">
+import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js';
+import { RGBELoader } from 'https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/loaders/RGBELoader.js';
+
+const scene = new THREE.Scene();
+
+const camera = new THREE.PerspectiveCamera(
+  55,
+  window.innerWidth / window.innerHeight,
+  0.1,
+  100
+);
+camera.position.z = 6;
+
+const renderer = new THREE.WebGLRenderer({
+  antialias: true,
+  powerPreference: "high-performance"
+});
+renderer.setSize(window.innerWidth, window.innerHeight);
+renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+renderer.toneMapping = THREE.ACESFilmicToneMapping;
+renderer.outputColorSpace = THREE.SRGBColorSpace;
+document.body.appendChild(renderer.domElement);
+
+/* HDR Environment (REALISM) */
+new RGBELoader()
+  .load(
+    'https://dl.polyhaven.org/file/ph-assets/HDRIs/hdr/1k/studio_small_03_1k.hdr',
+    (hdr) => {
+      hdr.mapping = THREE.EquirectangularReflectionMapping;
+      scene.environment = hdr;
+      scene.background = hdr;
+    }
+  );
+
+/* Lighting */
+const keyLight = new THREE.DirectionalLight(0xffffff, 2.5);
+keyLight.position.set(5, 5, 5);
+scene.add(keyLight);
+
+const fillLight = new THREE.PointLight(0x88ccff, 1.5, 20);
+fillLight.position.set(-5, -3, 3);
+scene.add(fillLight);
+
+/* Geometry */
+const geometry = new THREE.IcosahedronGeometry(1.5, 6);
+
+const material = new THREE.MeshPhysicalMaterial({
+  color: 0xffffff,
+  metalness: 0.7,
+  roughness: 0.15,
+  transmission: 0.25,
+  thickness: 1,
+  clearcoat: 1,
+  clearcoatRoughness: 0.1,
+  envMapIntensity: 1.5
+});
+
+const mesh = new THREE.Mesh(geometry, material);
+scene.add(mesh);
+
+/* Mouse Parallax */
+let mouseX = 0, mouseY = 0;
+window.addEventListener('mousemove', (e) => {
+  mouseX = (e.clientX / window.innerWidth) * 2 - 1;
+  mouseY = -(e.clientY / window.innerHeight) * 2 + 1;
+});
+
+/* Animate */
+function animate() {
+  mesh.rotation.y += 0.002;
+  mesh.rotation.x += 0.001;
+
+  camera.position.x += (mouseX * 0.8 - camera.position.x) * 0.05;
+  camera.position.y += (mouseY * 0.6 - camera.position.y) * 0.05;
+  camera.lookAt(scene.position);
+
+  renderer.render(scene, camera);
+  requestAnimationFrame(animate);
+}
+animate();
+
+/* Resize */
+window.addEventListener('resize', () => {
+  camera.aspect = window.innerWidth / window.innerHeight;
+  camera.updateProjectionMatrix();
+  renderer.setSize(window.innerWidth, window.innerHeight);
+});
+</script>
+
+</body>
+</html>
